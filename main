@@ -1,0 +1,193 @@
+
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <ctime>
+
+using namespace std;
+
+class Library {
+private:
+    int isbn;
+    string name, author, state;
+
+public:
+    Library() : isbn(), author(""), name(""), state("") {}
+
+    char gettime() {
+       
+        time_t today = time(nullptr);
+        int loanPeriodInDays = 14;
+        time_t dueTime = today + loanPeriodInDays * 24 * 60 * 60;
+      //  cout << dueTime; cout << "==";
+        char dueDateStr[26];
+        if (ctime_s(dueDateStr, sizeof(dueDateStr), &dueTime) == 0) {
+            cout << "Due Date: " << dueDateStr << endl;
+        }
+        return dueDateStr[26];
+    }
+
+    void check() {
+        ifstream file("data.txt");
+        if (!file) {
+            cerr << "Error opening file 'data.txt'" << endl;
+            return;
+        }
+        string line;
+        while (getline(file, line)) {
+            cout << line << endl;
+        }
+        file.close();
+    }
+
+    void search() {
+        string name;
+        cout << "Enter the Name of the book: ";
+        cin.ignore();
+        getline(cin, name);
+        ifstream data("data.txt");
+        if (!data) {
+            cerr << "Error opening file 'data.txt'" << endl;
+            return;
+        }
+        string line;
+        bool found = false;
+        ofstream tempFile("temp.txt");
+        while (getline(data, line)) {
+            stringstream ss(line);
+            string fileName, auth, bookisbn, stat;
+            getline(ss, fileName, ',');
+            getline(ss, auth, ',');
+            getline(ss, bookisbn, ',');
+            getline(ss, stat, ',');
+
+            if (name == fileName && stat == "yes") {
+                cout << "Book is Available\n";
+                cout << "===================" << endl;
+                cout << "Borrowing book...\nBook Borrowed successfully" << endl; cout << gettime();
+                borrow(name, tempFile);
+                found = true;
+                break;  
+            }
+            else if (name == fileName && stat == "no") {
+                cout << "Book not available." << endl;
+                break;
+            }
+        }
+        data.close();
+        tempFile.close();
+        remove("data.txt");
+        rename("temp.txt", "data.txt");
+    }
+
+    void borrow(string name, ofstream& tempFile) {
+        ifstream file("data.txt");
+        if (!file) {
+            cerr << "Error opening file 'data.txt'" << endl;
+            return;
+        }
+
+        string line;
+        while (getline(file, line)) {
+            stringstream ss(line);
+            string fileName, auth, bookisbn, stat;
+            getline(ss, fileName, ',');
+            getline(ss, auth, ',');
+            getline(ss, bookisbn, ',');
+            getline(ss, stat, ',');
+            if (name == fileName) {
+                stat = "no";
+                tempFile << fileName << "," << auth << "," << bookisbn << "," << stat << "\n";
+            }
+            else {
+                tempFile << line << "\n";
+            }
+        }
+        file.close();
+    }
+
+    void returnbook() {
+        string name;
+        cout << "Enter the name of the book:\n";
+        cin.ignore();
+        getline(cin, name);
+
+        ifstream file("data.txt");
+        ofstream tempFile("temp.txt");
+        if (!file || !tempFile) {
+            cerr << "Error opening files." << endl;
+            return;
+        }
+
+        string line;
+        while (getline(file, line)) {
+            stringstream ss(line);
+            string fileName, auth, bookisbn, stat;
+            getline(ss, fileName, ',');
+            getline(ss, auth, ',');
+            getline(ss, bookisbn, ',');
+            getline(ss, stat, ',');
+            if (name == fileName) {
+                stat = "yes";
+                tempFile << fileName << "," << auth << "," << bookisbn << "," << stat << "\n";
+            }
+            else {
+                tempFile << line << "\n";
+            }
+        }
+        file.close();
+        tempFile.close();
+        remove("data.txt");
+        rename("temp.txt", "data.txt");
+        cout << "Book '" << name << "' returned successfully." << endl;
+    }
+};
+
+int main() {
+    Library user;
+    
+    while (true) {
+        cout << "\nMain Menu\n";
+        cout << "Please select an option:\n";
+        cout << "1. Borrow book\n2. Return Book\n3. Check Availability\n4. Exit\n";
+        int choice;
+        cin >> choice;
+
+        switch (choice) {
+        case 1:
+            while (true) {
+                cout << "\nBorrow Menu\n";
+                cout << "1. Search book\n2. Check Availability\n3. Exit\n";
+                cin >> choice;
+
+                switch (choice) {
+                case 1:
+                    user.search();
+                    break;
+                case 2:
+                    user.check();
+                    break;
+                case 3:
+                    break;
+                default:
+                    cout << "Invalid Input. Please select from the given options!\n";
+                }
+                if (choice == 3)
+                    break;
+            }
+            break;
+        case 2:
+            user.returnbook();
+            break;
+        case 3:
+            user.check();
+            break;
+        case 4:
+            return 0;
+        default:
+            cout << "Invalid Input. Please select from the given options!\n";
+        }
+    }
+    return 0;
+}
